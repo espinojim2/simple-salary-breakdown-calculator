@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Breakdown</title>
+    <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-4">Cash Breakdown Calculator</h2>
+        
+        <label class="block text-gray-700 font-medium">Cash-in Amount:</label>
+        <input type="number" id="cashIn" class="w-full p-2 border rounded mb-3" required>
+        
+        <label class="block text-gray-700 font-medium">Number of Employees:</label>
+        <input type="number" id="numEmployees" class="w-full p-2 border rounded mb-3" required onchange="generateSalaryFields()">
+        
+        <div id="salaryInputs"></div>
+        
+        <button onclick="calculateBreakdown()" class="w-full bg-blue-500 text-white font-bold py-2 rounded mt-3 hover:bg-blue-600">Calculate</button>
+        
+        <div id="output" class="mt-4 p-4 bg-gray-50 border rounded text-gray-800"></div>
+    </div>
+
+    <script>
+        function generateSalaryFields() {
+            let numEmployees = parseInt(document.getElementById("numEmployees").value);
+            let salaryInputsDiv = document.getElementById("salaryInputs");
+            salaryInputsDiv.innerHTML = "";
+            
+            for (let i = 1; i <= numEmployees; i++) {
+                salaryInputsDiv.innerHTML += `
+                    <label class='block text-gray-700 font-medium'>Salary for Employee ${i}:</label>
+                    <input type='number' class='w-full p-2 border rounded mb-3 salary' required>
+                `;
+            }
+        }
+        
+        function calculateBreakdown() {
+            let cashIn = parseInt(document.getElementById("cashIn").value);
+            let salaryFields = document.getElementsByClassName("salary");
+            let totalAmount = 0;
+            let salaries = [];
+            let denominationFrequency = {};
+            
+            for (let field of salaryFields) {
+                let salary = parseInt(field.value) || 0;
+                salaries.push(salary);
+                totalAmount += salary;
+            }
+            
+            if (cashIn < totalAmount) {
+                document.getElementById("output").innerHTML = "<p class='text-red-500 font-medium'>Not enough cash-in amount!</p>";
+                return;
+            }
+            
+            let denominations = [1000, 500, 200, 100, 50, 20, 10, 5, 1];
+            let breakdown = `<h3 class='text-lg font-bold'>Total Amount to Distribute: ${totalAmount} pesos</h3>`;
+            
+            salaries.forEach((salary, index) => {
+                let employeeBreakdown = `<h4 class='text-md font-semibold mt-2'>Employee ${index + 1}: ${salary} pesos</h4><ul class='list-disc pl-5'>`;
+                let remainingSalary = salary;
+                
+                for (let denom of denominations) {
+                    let count = Math.floor(remainingSalary / denom);
+                    if (count > 0) {
+                        employeeBreakdown += `<li>${count} x ${denom} pesos</li>`;
+                        remainingSalary %= denom;
+                        denominationFrequency[denom] = (denominationFrequency[denom] || 0) + count;
+                    }
+                }
+                
+                employeeBreakdown += "</ul>";
+                breakdown += employeeBreakdown;
+            });
+            
+            breakdown += "<h3 class='text-lg font-bold mt-4'>Overall Denomination Frequency</h3><ul class='list-disc pl-5'>";
+            
+            denominations.forEach(denom => {
+                if (denominationFrequency[denom]) {
+                    breakdown += `<li>${denominationFrequency[denom]} x ${denom} pesos</li>`;
+                }
+            });
+            
+            breakdown += "</ul>";
+            document.getElementById("output").innerHTML = breakdown;
+        }
+    </script>
+</body>
+</html>
